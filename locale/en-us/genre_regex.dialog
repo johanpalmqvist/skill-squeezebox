@@ -1,0 +1,2 @@
+(the |)(genre) (?P<genre>.+)
+(some |)(?P<genre>.+) (genre|music)

@@ -1,0 +1,78 @@
+{
+    "name": "SqueezeBox Media Skill",
+    "skillMetadata": {
+        "sections": [
+            {
+                "name": "",
+                "name": "Logitech Media Server",
+                "fields": [
+                    {
+                        "type": "label",
+                        "value": "",
+                        "label": "Specify how to connect to Logitech Media Server.<p/>"
+                    },
+                    {
+                        "name": "server",
+                        "type": "text",
+                        "label": "Server hostname or IP address",
+                        "value": "",
+                        "placeholder": "lms.mydomain.com"
+                    },
+                    {
+                        "name": "port",
+                        "type": "text",
+                        "label": "Server port number",
+                        "value": "",
+                        "placeholder": "9000"
+                    },
+                    {
+                        "name": "username",
+                        "type": "text",
+                        "label": "Username",
+                        "value": "",
+                        "placeholder": "lms_user"
+                    },
+                    {
+                        "name": "password",
+                        "type": "password",
+                        "label": "Password",
+                        "value": ""
+                    }
+                ]
+            },
+            {
+                "name": "SqueezeBox Media Player",
+                "fields": [
+                    {
+                        "type": "label",
+                        "value": "",
+                        "label": "Set to the default player this skill should handle.<p/>"
+                    },
+                    {
+                        "name": "default_player_name",
+                        "type": "text",
+                        "label": "Default player name",
+                        "value": "",
+                        "placeholder": "Living Room"
+                    }
+                ]
+            },
+            {
+                "name": "SqueezeBox Skill",
+                "fields": [
+                    {
+                        "type": "label",
+                        "value": "",
+                        "label": "Set skill behavior.<p/>"
+                    },
+                    {
+                        "name": "speak_dialog_enabled",
+                        "type": "checkbox",
+                        "label": "Respond by voice (no sound effects)",
+                        "value": "false"
+                    }
+                ]
+            }
+        ]
+    }
+}
