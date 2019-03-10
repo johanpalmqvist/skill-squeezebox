@@ -3,8 +3,7 @@
     "skillMetadata": {
         "sections": [
             {
-                "name": "",
-                "name": "Logitech Media Server",
+                "name": "Connection to Logitech Media Server",
                 "fields": [
                     {
                         "type": "label",
@@ -41,7 +40,7 @@
                 ]
             },
             {
-                "name": "SqueezeBox Media Player",
+                "name": "SqueezeBox Player",
                 "fields": [
                     {
                         "type": "label",
@@ -58,7 +57,7 @@
                 ]
             },
             {
-                "name": "SqueezeBox Skill",
+                "name": "Behavior",
                 "fields": [
                     {
                         "type": "label",
@@ -69,7 +68,7 @@
                         "name": "speak_dialog_enabled",
                         "type": "checkbox",
                         "label": "Respond by voice (no sound effects)",
-                        "value": "false"
+                        "value": False
                     }
                 ]
             }
