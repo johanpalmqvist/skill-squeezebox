@@ -68,7 +68,7 @@
                         "name": "speak_dialog_enabled",
                         "type": "checkbox",
                         "label": "Respond by voice (no sound effects)",
-                        "value": False
+                        "value": "false"
                     }
                 ]
             }
