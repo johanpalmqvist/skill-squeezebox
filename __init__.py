@@ -74,7 +74,18 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
         )
         self.scorer = QRatio
         self.processor = full_process
+        self.regexes = {}
         self.get_sources("connecting...")
+
+    # Regex handler
+    def translate_regex(self, regex):
+        if regex not in self.regexes:
+            path = self.find_resource(regex + ".regex")
+            if path:
+                with open(path) as f:
+                    string = f.read().strip()
+                self.regexes[regex] = string
+        return self.regexes[regex]
 
     # Get sources
     def get_sources(self, message):
@@ -203,7 +214,7 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
     # Get backend name from phrase
     def get_backend(self, phrase):
         LOG.debug("Backend match phrase: {}".format(phrase))
-        match = re.search(self.translate("backend_regex"), phrase)
+        match = re.search(self.translate_regex("backend"), phrase)
         LOG.debug("Backend match regex: {}".format(match))
         if match:
             backend = match.group("backend")
@@ -576,7 +587,7 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
     def CPS_match_query_phrase(self, phrase):
         LOG.debug("CPS_match_query_phrase={}".format(phrase))
 
-        match = re.search(self.translate("squeezebox_bonus_regex"), phrase)
+        match = re.search(self.translate_regex("squeezebox_bonus"), phrase)
         if match:
             LOG.debug(
                 "CPS_match_query_phrase: bonus found, phrase={}".format(phrase)
@@ -591,16 +602,16 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
             bonus = 0
 
         LOG.debug(
-            "CPS_match_query_phrase: on_squeezebox_regex={}".format(
-                self.translate("on_squeezebox_regex")
+            "CPS_match_query_phrase: on_squeezebox={}".format(
+                self.translate_regex("on_squeezebox")
             )
         )
         phrase = re.sub(
-            self.translate("on_squeezebox_regex"), "", phrase
+            self.translate_regex("on_squeezebox"), "", phrase
         ).strip()
 
         backend, playerid = self.get_playerid(self.get_backend(phrase))
-        phrase = re.sub(self.translate("backend_regex"), "", phrase)
+        phrase = re.sub(self.translate_regex("backend"), "", phrase)
 
         confidence, data = self.continue_playback(phrase, bonus)
         if not data:
@@ -638,7 +649,7 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
         LOG.debug("specific_query: phrase={}, bonus={}".format(phrase, bonus))
 
         # Check album
-        match = re.match(self.translate("album_regex"), phrase)
+        match = re.match(self.translate_regex("album"), phrase)
         LOG.debug("album specific_query: match={}".format(match))
         if match:
             bonus += 0.1
@@ -657,7 +668,7 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
             )
 
         # Check artist
-        match = re.match(self.translate("artist_regex"), phrase)
+        match = re.match(self.translate_regex("artist"), phrase)
         LOG.debug("artist specific_query: match={}".format(match))
         if match:
             bonus += 0.1
@@ -678,7 +689,7 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
             )
 
         # Check title
-        match = re.match(self.translate("title_regex"), phrase)
+        match = re.match(self.translate_regex("title"), phrase)
         LOG.debug("title specific_query: match={}".format(match))
         if match:
             title = match.groupdict()["title"]
@@ -693,7 +704,7 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
             return (confidence, {"data": url, "name": title, "type": "title"})
 
         # Check genre
-        match = re.match(self.translate("genre_regex"), phrase)
+        match = re.match(self.translate_regex("genre"), phrase)
         LOG.debug("genre specific_query: match={}".format(match))
         if match:
             bonus += 0.1
@@ -711,8 +722,27 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
                 {"data": genre_id, "name": genre, "type": "genre"},
             )
 
+        # Check music (genre)
+        match = re.match(self.translate_regex("music"), phrase)
+        LOG.debug("music specific_query: match={}".format(match))
+        if match:
+            bonus += 0.1
+            music = match.groupdict()["music"]
+            LOG.debug("music specific_query: music={}".format(music))
+            music, conf = self.get_best_genre(music)
+            if not music:
+                LOG.debug("specific_query: music not found")
+                return None, None
+            confidence = min(conf + bonus, 1.0)
+            LOG.debug("specific_query: music confidence={}".format(confidence))
+            genre_id = self.sources["genre"][music]["genre_id"]
+            return (
+                confidence,
+                {"data": genre_id, "name": music, "type": "genre"},
+            )
+
         # Check playlist
-        match = re.match(self.translate("playlist_regex"), phrase)
+        match = re.match(self.translate_regex("playlist"), phrase)
         LOG.debug("playlist specific_query: match={}".format(match))
         if match:
             bonus += 0.1
@@ -732,7 +762,7 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
             )
 
         # Check favorite
-        match = re.match(self.translate("favorite_regex"), phrase)
+        match = re.match(self.translate_regex("favorite"), phrase)
         LOG.debug("favorite specific_query: match={}".format(match))
         if match:
             bonus += 0.1
@@ -753,7 +783,7 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
             )
 
         # Check podcast
-        match = re.match(self.translate("podcast_regex"), phrase)
+        match = re.match(self.translate_regex("podcast"), phrase)
         LOG.debug("podcast specific_query: match={}".format(match))
         if match:
             bonus += 0.1
