@@ -69,6 +69,30 @@
                         "type": "checkbox",
                         "label": "Respond by voice (no sound effects)",
                         "value": "false"
+                    },
+                    {
+                        "name": "media_library_source_enabled",
+                        "type": "checkbox",
+                        "label": "Enable Media Library source",
+                        "value": "true"
+                    },
+                    {
+                        "name": "favorite_source_enabled",
+                        "type": "checkbox",
+                        "label": "Enable Favorite source",
+                        "value": "true"
+                    },
+                    {
+                        "name": "playlist_source_enabled",
+                        "type": "checkbox",
+                        "label": "Enable Playlist source",
+                        "value": "true"
+                    },
+                    {
+                        "name": "podcast_source_enabled",
+                        "type": "checkbox",
+                        "label": "Enable Podcast source",
+                        "value": "true"
                     }
                 ]
             }

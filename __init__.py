@@ -28,19 +28,41 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
         self.add_event("mycroft.audio.service.prev", self.handle_previoustrack)
         self.add_event("mycroft.audio.service.pause", self.handle_pause)
         self.add_event("mycroft.audio.service.resume", self.handle_resume)
-        self.lms = LMSClient(
-            self.settings["server"],
-            self.settings["port"],
-            self.settings["username"],
-            self.settings["password"],
-        )
-        self.default_player_name = self.settings["default_player_name"]
+        if not self.settings:
+            raise ValueError("Could not load settings")
+        LOG.debug("Settings: {}".format(self.settings))
+        try:
+            self.lms = LMSClient(
+                self.settings["server"],
+                self.settings["port"],
+                self.settings["username"],
+                self.settings["password"],
+            )
+        except Exception as e:
+            LOG.error(
+                "Could not load server configuration. Exception: {}".format(e)
+            )
+            raise ValueError("Could not load server configuration.")
+        try:
+            self.default_player_name = self.settings["default_player_name"]
+        except Exception as e:
+            LOG.error("Default player name not set. Exception: {}".format(e))
+            raise ValueError("Default player name not set.")
         self.speak_dialog_enabled = self.settings.get(
-            "speak_dialog_enabled", None
+            "speak_dialog_enabled", False
         )
-        if self.speak_dialog_enabled is None:
-            self.speak_dialog_enabled = False
-        LOG.debug("Speak dialog enabled: {}".format(self.speak_dialog_enabled))
+        self.media_library_source_enabled = self.settings.get(
+            "media_library_source_enabled", True
+        )
+        self.favorite_source_enabled = self.settings.get(
+            "favorite_source_enabled", True
+        )
+        self.playlist_source_enabled = self.settings.get(
+            "playlist_source_enabled", True
+        )
+        self.podcast_source_enabled = self.settings.get(
+            "podcast_source_enabled", True
+        )
         self.sources_cache_filename = join(
             abspath(dirname(__file__)), "sources_cache.json.gz"
         )
@@ -62,43 +84,82 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
         default_backend, default_playerid = self.get_playerid(None)
 
         # Album, Artist, Genre, Title sources (cache server response)
-        self.update_sources_cache()
-        self.load_sources_cache()
+        if self.media_library_source_enabled:
+            self.update_sources_cache()
+            self.load_sources_cache()
+        else:
+            LOG.info("Media Library source disabled. Skipped.")
 
         # Favorite sources (query server)
-        self.sources["favorite"] = defaultdict(dict)
-        favorites = self.lms.get_favorites()
-        for favorite in favorites:
-            if not self.sources["favorite"][favorite["name"]]:
-                if "audio" in favorite["type"] and favorite["isaudio"] == 1:
-                    self.sources["favorite"][favorite["name"]][
-                        "favorite_id"
-                    ] = favorite["id"]
-                    LOG.debug("Loaded favorite: {}".format(favorite["name"]))
-        LOG.info("Loaded favorites")
+        if self.favorite_source_enabled:
+            self.sources["favorite"] = defaultdict(dict)
+            favorites = self.lms.get_favorites()
+            for favorite in favorites:
+                try:
+                    if not self.sources["favorite"][favorite["name"]]:
+                        if (
+                            "audio" in favorite["type"]
+                            and favorite["isaudio"] == 1
+                        ):
+                            self.sources["favorite"][favorite["name"]][
+                                "favorite_id"
+                            ] = favorite["id"]
+                            LOG.debug(
+                                "Loaded favorite: {}".format(favorite["name"])
+                            )
+                except Exception as e:
+                    LOG.warning(
+                        "Failed to load favorite. Exception: {}".format(e)
+                    )
+            LOG.info("Loaded favorites")
+        else:
+            LOG.info("Favorite source disabled. Skipped.")
 
         # Playlist sources (query server)
-        self.sources["playlist"] = defaultdict(dict)
-        playlists = self.lms.get_playlists()
-        for playlist in playlists:
-            if not self.sources["playlist"][playlist["playlist"]]:
-                self.sources["playlist"][playlist["playlist"]][
-                    "playlist_id"
-                ] = playlist["id"]
-                LOG.debug("Loaded playlist: {}".format(playlist["playlist"]))
-        LOG.info("Loaded playlists")
+        if self.playlist_source_enabled:
+            self.sources["playlist"] = defaultdict(dict)
+            playlists = self.lms.get_playlists()
+            for playlist in playlists:
+                try:
+                    if not self.sources["playlist"][playlist["playlist"]]:
+                        self.sources["playlist"][playlist["playlist"]][
+                            "playlist_id"
+                        ] = playlist["id"]
+                        LOG.debug(
+                            "Loaded playlist: {}".format(playlist["playlist"])
+                        )
+                except Exception as e:
+                    LOG.warning(
+                        "Failed to load playlist. Exception: {}".format(e)
+                    )
+            LOG.info("Loaded playlists")
+        else:
+            LOG.info("Playlist source disabled. Skipped.")
 
         # Podcast sources (query server)
-        self.sources["podcast"] = defaultdict(dict)
-        podcasts = self.lms.get_podcasts(default_playerid)
-        for podcast in podcasts:
-            if not self.sources["podcast"][podcast["name"]]:
-                if not podcast["hasitems"] == 0 and podcast["isaudio"] == 0:
-                    self.sources["podcast"][podcast["name"]][
-                        "podcast_id"
-                    ] = podcast["id"]
-                    LOG.debug("Loaded podcast: {}".format(podcast["name"]))
-        LOG.info("Loaded podcasts")
+        if self.podcast_source_enabled:
+            self.sources["podcast"] = defaultdict(dict)
+            podcasts = self.lms.get_podcasts(default_playerid)
+            for podcast in podcasts:
+                try:
+                    if not self.sources["podcast"][podcast["name"]]:
+                        if (
+                            not podcast["hasitems"] == 0
+                            and podcast["isaudio"] == 0
+                        ):
+                            self.sources["podcast"][podcast["name"]][
+                                "podcast_id"
+                            ] = podcast["id"]
+                            LOG.debug(
+                                "Loaded podcast: {}".format(podcast["name"])
+                            )
+                except Exception as e:
+                    LOG.warning(
+                        "Failed to load podcast. Exception: {}".format(e)
+                    )
+            LOG.info("Loaded podcasts")
+        else:
+            LOG.info("Podcast source disabled. Skipped.")
 
         LOG.info("Loaded content")
 
@@ -232,72 +293,95 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
         # Artist sources
         self.sources["artist"] = defaultdict(dict)
         for result in self.results:
-            if not self.sources["artist"][result["artist"]]:
-                self.sources["artist"][result["artist"]]["artist_id"] = result[
-                    "artist_id"
-                ]
-                self.sources["artist"][result["artist"]]["album"] = []
+            try:
+                if not self.sources["artist"][result["artist"]]:
+                    self.sources["artist"][result["artist"]][
+                        "artist_id"
+                    ] = result["artist_id"]
+                    self.sources["artist"][result["artist"]]["album"] = []
+            except Exception as e:
+                LOG.warning("Failed to load artist. Exception: {}".format(e))
         LOG.info("Loaded artists")
 
         # Album sources
         self.sources["album"] = defaultdict(dict)
         self.sources["title"] = defaultdict(dict)
         for result_albums in self.results:
-            if not self.sources["album"][result_albums["album"]]:
-                self.sources["album"][result_albums["album"]][
-                    "album_id"
-                ] = result_albums["album_id"]
-                self.sources["album"][result_albums["album"]]["title"] = []
-                self.sources["album"][
-                    "{} by {}".format(
-                        result_albums["album"], result_albums["artist"]
-                    )
-                ]["album_id"] = result_albums["album_id"]
-                self.sources["album"][
-                    "{} by {}".format(
-                        result_albums["album"], result_albums["artist"]
-                    )
-                ]["title"] = []
-                self.sources["artist"][result_albums["artist"]][
-                    "album"
-                ].append(result_albums["album_id"])
-                # Title sources
-                for result_title in self.results:
-                    if result_title["album_id"] == result_albums["album_id"]:
-                        self.sources["title"][result_title["title"]] = {
-                            "title_id": result_title["id"],
-                            "url": result_title["url"],
-                        }
-                        artist_title = "{} by {}".format(
-                            result_title["title"], result_title["artist"]
+            try:
+                if not self.sources["album"][result_albums["album"]]:
+                    self.sources["album"][result_albums["album"]][
+                        "album_id"
+                    ] = result_albums["album_id"]
+                    self.sources["album"][result_albums["album"]]["title"] = []
+                    self.sources["album"][
+                        "{} by {}".format(
+                            result_albums["album"], result_albums["artist"]
                         )
-                        self.sources["title"][artist_title] = {
-                            "title_id": result_title["id"],
-                            "url": result_title["url"],
-                        }
-                        self.sources["album"][result_albums["album"]][
-                            "title"
-                        ].append(result_title["id"])
-                        self.sources["album"][
-                            "{} by {}".format(
-                                result_albums["album"], result_albums["artist"]
+                    ]["album_id"] = result_albums["album_id"]
+                    self.sources["album"][
+                        "{} by {}".format(
+                            result_albums["album"], result_albums["artist"]
+                        )
+                    ]["title"] = []
+                    self.sources["artist"][result_albums["artist"]][
+                        "album"
+                    ].append(result_albums["album_id"])
+                    # Title sources
+                    for result_title in self.results:
+                        try:
+                            if (
+                                result_title["album_id"]
+                                == result_albums["album_id"]
+                            ):
+                                self.sources["title"][
+                                    result_title["title"]
+                                ] = {
+                                    "title_id": result_title["id"],
+                                    "url": result_title["url"],
+                                }
+                                artist_title = "{} by {}".format(
+                                    result_title["title"],
+                                    result_title["artist"],
+                                )
+                                self.sources["title"][artist_title] = {
+                                    "title_id": result_title["id"],
+                                    "url": result_title["url"],
+                                }
+                                self.sources["album"][result_albums["album"]][
+                                    "title"
+                                ].append(result_title["id"])
+                                self.sources["album"][
+                                    "{} by {}".format(
+                                        result_albums["album"],
+                                        result_albums["artist"],
+                                    )
+                                ]["title"].append(result_title["id"])
+                        except Exception as e:
+                            LOG.warning(
+                                "Failed to load album. Exception: {}".format(e)
                             )
-                        ]["title"].append(result_title["id"])
-                LOG.debug(
-                    "Loaded titles for album: {}".format(
-                        result_albums["album"]
+                    LOG.debug(
+                        "Loaded titles for album: {}".format(
+                            result_albums["album"]
+                        )
                     )
-                )
+            except Exception as e:
+                LOG.warning("Failed to load album. Exception: {}".format(e))
         LOG.info("Loaded albums")
 
         # Genre sources
         self.sources["genre"] = defaultdict(dict)
         for result_genres in self.results:
-            if not self.sources["genre"][result_genres["genre"]]:
-                self.sources["genre"][result_genres["genre"]][
-                    "genre_id"
-                ] = result_genres["genre_id"]
-                LOG.debug("Loaded genre: {}".format(result_genres["genre"]))
+            try:
+                if not self.sources["genre"][result_genres["genre"]]:
+                    self.sources["genre"][result_genres["genre"]][
+                        "genre_id"
+                    ] = result_genres["genre_id"]
+                    LOG.debug(
+                        "Loaded genre: {}".format(result_genres["genre"])
+                    )
+            except Exception as e:
+                LOG.warning("Failed to load genre. Exception: {}".format(e))
         LOG.info("Loaded genres")
 
         LOG.info("Saving sources cache")
