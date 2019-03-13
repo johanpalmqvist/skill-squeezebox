@@ -59,7 +59,7 @@ Working features:
   - \<name of squeeze client\>
 
 ## Sound Effects:
-To use sound effects as feedback add WAVE files to the skill directory using the following names:
+To use sound effects as feedback add WAVE files to the skill sounds/ directory using the following names:
   - cachenotupdated.wav
   - cacheupdated.wav
   - nexttrack.wav

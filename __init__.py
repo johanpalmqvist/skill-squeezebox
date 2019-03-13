@@ -450,7 +450,7 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
         if self.speak_dialog_enabled == "True" or not sound_dialog:
             self.speak_dialog(speak_dialog_name, data=data)
         else:
-            path = join(abspath(dirname(__file__)), sound_dialog)
+            path = join(abspath(dirname(__file__)), "sounds", sound_dialog)
             if isfile(path):
                 play_wav(path)
             else:
