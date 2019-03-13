@@ -1018,6 +1018,22 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
         data = {"volume": self.lms.get_volume(playerid)}
         self.play_dialog("volumeunmute.wav", "volumeunmute", data)
 
+    @intent_file_handler("PowerOff.intent")
+    def handle_poweroff(self, message):
+        LOG.info("Handling power off request")
+        backend, playerid = self.get_playerid(message.data.get("backend"))
+        self.lms.power_off(playerid)
+        data = {"backend": backend}
+        self.play_dialog("poweroff.wav", "poweroff", data)
+
+    @intent_file_handler("PowerOn.intent")
+    def handle_poweron(self, message):
+        LOG.info("Handling power on request")
+        backend, playerid = self.get_playerid(message.data.get("backend"))
+        self.lms.power_on(playerid)
+        data = {"backend": backend}
+        self.play_dialog("poweron.wav", "poweron", data)
+
     @intent_file_handler("IdentifyTrack.intent")
     def handle_identifytrack(self, message):
         LOG.info("Handling identify track request")

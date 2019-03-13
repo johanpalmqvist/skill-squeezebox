@@ -422,6 +422,24 @@ class LMSClient(object):
         }
         return self.lms_request(payload)["result"]["mixer volume"]
 
+    # Power off
+    def power_off(self, playerid):
+        payload = {
+            "id": 1,
+            "method": "slim.request",
+            "params": [playerid, ["power", "0"]],
+        }
+        return self.lms_request(payload)
+
+    # Power on
+    def power_on(self, playerid):
+        payload = {
+            "id": 1,
+            "method": "slim.request",
+            "params": [playerid, ["power", "1"]],
+        }
+        return self.lms_request(payload)
+
     # Get artist currently playing
     def get_current_artist(self, playerid):
         payload = {
