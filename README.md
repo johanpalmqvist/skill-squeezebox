@@ -25,6 +25,7 @@ Working features:
   - play artist \<content\>
   - play favorite \<content\>
   - play genre \<content\>
+  - play \<content\> music
   - play playlist \<content\>
   - play podcast \<content\>
   - play radio \<content\>
@@ -39,6 +40,8 @@ Working features:
   - maximum volume
   - mute volume
   - unmute volume
+  - power off \<player_name\>
+  - power on \<player_name\>
 
 \<content\> can be:
   - \<song\>
@@ -63,6 +66,8 @@ To use sound effects as feedback add WAVE files to the skill directory using the
   - pause.wav
   - playernotfound.wav
   - playingcontent.wav
+  - poweroff.wav
+  - poweron.wav
   - previoustrack.wav
   - resume.wav
   - stop.wav
