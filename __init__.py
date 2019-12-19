@@ -28,15 +28,30 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
         self.add_event("mycroft.audio.service.prev", self.handle_previoustrack)
         self.add_event("mycroft.audio.service.pause", self.handle_pause)
         self.add_event("mycroft.audio.service.resume", self.handle_resume)
-        if not self.settings:
-            raise ValueError("Could not load settings")
+
+        self.settings_change_callback = self.get_settings
+
+        self.sources_cache_filename = join(
+            abspath(dirname(__file__)), "sources_cache.json.gz"
+        )
+        self.library_cache_filename = join(
+            abspath(dirname(__file__)), "library_cache.json.gz"
+        )
+        self.library_total_duration_state_filename = join(
+            abspath(dirname(__file__)), "library_total_duration_state.json.gz"
+        )
+        self.scorer = QRatio
+        self.processor = full_process
+        self.regexes = {}
+
+    def get_settings(self):
         LOG.debug("Settings: {}".format(self.settings))
         try:
             self.lms = LMSClient(
-                self.settings["server"],
-                self.settings["port"],
-                self.settings["username"],
-                self.settings["password"],
+                self.settings.get("server"),
+                self.settings.get("port"),
+                self.settings.get("username"),
+                self.settings.get("password"),
             )
         except Exception as e:
             LOG.error(
@@ -44,7 +59,7 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
             )
             raise ValueError("Could not load server configuration.")
         try:
-            self.default_player_name = self.settings["default_player_name"]
+            self.default_player_name = self.settings.get("default_player_name")
         except Exception as e:
             LOG.error("Default player name not set. Exception: {}".format(e))
             raise ValueError("Default player name not set.")
@@ -63,18 +78,7 @@ class SqueezeBoxMediaSkill(CommonPlaySkill):
         self.podcast_source_enabled = self.settings.get(
             "podcast_source_enabled", True
         )
-        self.sources_cache_filename = join(
-            abspath(dirname(__file__)), "sources_cache.json.gz"
-        )
-        self.library_cache_filename = join(
-            abspath(dirname(__file__)), "library_cache.json.gz"
-        )
-        self.library_total_duration_state_filename = join(
-            abspath(dirname(__file__)), "library_total_duration_state.json.gz"
-        )
-        self.scorer = QRatio
-        self.processor = full_process
-        self.regexes = {}
+
         self.get_sources("connecting...")
 
     # Regex handler
